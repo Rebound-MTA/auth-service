@@ -11,9 +11,15 @@ const JWT_SECRET = process.env.JWT_SECRET as string;
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { fullName, email, password, profile, preferences } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hashedPassword });
+    const user = new User({
+      fullName,
+      email,
+      password: hashedPassword,
+      profile,
+      preferences,
+    });
     await user.save();
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
@@ -30,11 +36,9 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign(
-      { userId: user._id, roles: user.roles },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    const token = jwt.sign({ userId: user._id, roles: user.role }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
     res.json({ token });
   } catch (error) {
     res.status(500).json({ error: "Login failed" });
@@ -65,7 +69,7 @@ export const getUserRoles = async (
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    res.json({ roles: user.roles });
+    res.json({ roles: user.role });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch roles" });
   }
